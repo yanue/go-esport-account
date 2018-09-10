@@ -1,1 +1,13 @@
 # go-esport-account
+### go-micro
+1. 命令行
+> github.com/micro/micro
+2. 微服务
+> github.com/micro/go-micro
+### 其他选型
+1. 数据库操作
+> github.com/jinzhu/gorm
+2. redis操作
+> github.com/go-redis/redis
+3. http框架
+> github.com/gin-gonic/gin
