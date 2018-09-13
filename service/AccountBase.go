@@ -10,50 +10,62 @@
 package service
 
 import (
-	"github.com/micro/go-log"
 	"github.com/micro/go-micro"
-	"go-esport-account/common"
-	"go-esport-account/proto"
-	"time"
+	"github.com/yanue/go-esport-common"
+	"github.com/yanue/go-esport-common/proto"
 )
 
 var rpc *AccountRpc
+var cache *AccountCache
+var orm *AccountOrm
+
+const RedisPrefix = common.ServiceNameAccount + "_"
 
 /**
 初始化服务
  */
-func InitAccountService() {
-	rpcService := micro.NewService(
-		micro.Name("go.esport.account.srv"),
-	)
+func InitAccountService(dbUser, dbAuth, dbAddr, dbName, redisAddr, redisPass string) {
+	common.Logs.Info("InitAccountService")
+	// db
+	orm = new(AccountOrm)
+	orm.initDb(dbUser, dbAuth, dbAddr, dbName)
 
+	// redis
+	cache = new(AccountCache)
+	cache.initRedis(redisAddr, redisPass)
+
+	// account service
+	acct := new(AccountService)
+	acct.cache = cache
+	acct.orm = orm
+
+	// rpc service
+	rpc = new(AccountRpc)
+	rpc.account = acct
+
+	// 微服务
+	rpcService := micro.NewService(
+		micro.Name(common.MicroServiceNameAccount),
+	)
 	rpcService.Init()
 
 	// 注册rpc
-	go proto.RegisterAccountHandler(rpcService.Server(), InitRpc())
+	go proto.RegisterAccountHandler(rpcService.Server(), rpc)
 
+	// 运行
 	err := rpcService.Run()
 	if err != nil {
-		log.Fatal("启动失败:%v", err.Error())
+		panic("启动失败:" + err.Error())
 	}
-}
-
-/**
-初始化服务
- */
-func InitRpc() *AccountRpc {
-	common.Info("InitAccountService")
-	rpc = new(AccountRpc)
-	rpc.account = new(AccountService)
-
-	return rpc
 }
 
 /**
 卸载服务
  */
 func UnInitAccountService() {
-	common.Notice("UnInitAccountService start")
-	time.Sleep(1 * time.Minute)
-	common.Notice("UnInitAccountService end")
+	// 关闭连接
+	cache.redis.Close()
+	orm.db.Close()
+
+	common.Logs.Info("UnInitAccountService")
 }
