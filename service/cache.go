@@ -65,3 +65,49 @@ func (this *AccountCache) GetUserInfo(uid int) (user *TUser, err error) {
 
 	return user, nil
 }
+
+/**
+ 获取用户信息
+ */
+func (this *AccountCache) SetUserInfo(uid int) (user *TUser, err error) {
+	user = new(TUser)
+	key := this.key.HUserInfo(uid)
+
+	res, err := this.redis.HGetAll(key).Result()
+	if err != nil {
+		return user, err
+	}
+
+	if len(res) == 0 {
+		return user, errors.New("未找到数据")
+	}
+
+	// 解析到结构体
+	err = mapstructure.Decode(res, user)
+	if err != nil {
+		return user, err
+	}
+
+	return user, nil
+}
+
+/**
+ 设置用户token信息
+ */
+func (this *AccountCache) SetUserToken(uid int, token string) (err error) {
+	key := this.key.SUserToken(uid)
+
+	// 0 不过期
+	_, err = this.redis.Set(key, token, 0).Result()
+	return err
+}
+
+/**
+ 获取用户token信息
+ */
+func (this *AccountCache) GetUserToken(uid int) (token string, err error) {
+	key := this.key.SUserToken(uid)
+
+	// 0 不过期
+	return this.redis.Get(key).Result()
+}

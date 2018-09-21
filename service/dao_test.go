@@ -16,7 +16,6 @@ import (
 )
 
 func init() {
-	initDb()
 }
 
 func TestAccountService_Reg(t *testing.T) {

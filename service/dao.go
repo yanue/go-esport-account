@@ -51,3 +51,13 @@ func (this *AccountOrm) initDb(dbUser, dbAuth, dbAddr, dbName string) {
 
 	orm.db = db
 }
+
+/**
+ 获取用户信息
+ */
+func (this *AccountOrm) GetUserInfo(uid int) (user *TUser, err error) {
+	user = new(TUser)
+	err = this.db.First(user, 10).Row().Scan(user)
+
+	return user, err
+}

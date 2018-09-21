@@ -10,9 +10,12 @@
 package service
 
 import (
+	"github.com/micro/go-grpc"
 	"github.com/micro/go-micro"
+	"github.com/micro/go-micro/transport"
 	"github.com/yanue/go-esport-common"
 	"github.com/yanue/go-esport-common/proto"
+	"time"
 )
 
 var rpc *AccountRpc
@@ -44,8 +47,18 @@ func InitAccountService(dbUser, dbAuth, dbAddr, dbName, redisAddr, redisPass str
 	rpc.account = acct
 
 	// 微服务
-	rpcService := micro.NewService(
+	rpcService := grpc.NewService(
 		micro.Name(common.MicroServiceNameAccount),
+		micro.RegisterTTL(time.Second*30),
+		micro.RegisterInterval(time.Second*10),
+		// setup a new transport with secure option
+		micro.Transport(
+			// create new transport
+			transport.NewTransport(
+				// set to automatically secure
+				transport.Secure(true),
+			),
+		),
 	)
 	rpcService.Init()
 

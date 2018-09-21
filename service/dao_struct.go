@@ -10,7 +10,6 @@
 package service
 
 import (
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -18,6 +17,7 @@ import (
 type TUser struct {
 	Id             int
 	Account        string `gorm:"not null;size:50;unique;comment:'登陆账号,唯一';"`
+	Password       string `gorm:"not null;type:char(60);comment:'登陆密码';"`
 	Name           string `gorm:"not null;index;size:100;"`
 	Gender         int    `gorm:"not null;comment:'0未设置,1男,2女';"`
 	Phone          string `gorm:"not null;type:char(11);comment:'手机号';"`
@@ -71,13 +71,4 @@ type TClass struct {
 	Name    string `gorm:"not null;size:255"`
 	AreaId  string `gorm:"not null;"`
 	Created int    `gorm:"not null;"`
-}
-
-type CRedisKey struct{}
-
-/**
-用户信息
- */
-func (this *CRedisKey) HUserInfo(uid int) (string) {
-	return RedisPrefix + fmt.Sprintf("user:%d", uid)
 }
