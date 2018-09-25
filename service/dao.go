@@ -57,7 +57,8 @@ func (this *AccountOrm) initDb(dbUser, dbAuth, dbAddr, dbName string) {
  */
 func (this *AccountOrm) GetUserInfo(uid int) (user *TUser, err error) {
 	user = new(TUser)
-	err = this.db.First(user, 10).Row().Scan(user)
+	// 查找用户
+	err = this.db.First(user, "id=?", uid).Error
 
 	return user, err
 }

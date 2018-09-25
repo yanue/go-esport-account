@@ -94,11 +94,11 @@ func (this *AccountCache) SetUserInfo(uid int) (user *TUser, err error) {
 /**
  设置用户token信息
  */
-func (this *AccountCache) SetUserToken(uid int, token string) (err error) {
+func (this *AccountCache) SetUserToken(uid int, payload string) (err error) {
 	key := this.key.SUserToken(uid)
 
 	// 0 不过期
-	_, err = this.redis.Set(key, token, 0).Result()
+	_, err = this.redis.Set(key, payload, 0).Result()
 	return err
 }
 

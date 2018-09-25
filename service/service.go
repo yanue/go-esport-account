@@ -10,7 +10,6 @@
 package service
 
 import (
-	"errors"
 	"github.com/yanue/go-esport-common"
 	"github.com/yanue/go-esport-common/errcode"
 	"github.com/yanue/go-esport-common/proto"
@@ -24,37 +23,59 @@ type AccountService struct {
 }
 
 func (this *AccountService) GetUserInfo(uid int) (user *TUser, err error) {
+	// 从缓存中读取
 	user, err = this.cache.GetUserInfo(uid)
-	if err != nil {
-		return
+	if err == nil {
+		return user, nil
 	}
-	common.Logs.Info("user, err", user, err)
+
+	// 数据未找到,从mysql读取
 	user, err = this.orm.GetUserInfo(uid)
 	if err != nil {
+		common.Logs.Info("user, err", user, err)
 		return
 	}
-	common.Logs.Info("user, err:1 ", user, err)
 
 	this.cache.SetUserInfo(uid)
 
-	return user, err
+	return user, nil
 }
 
 func (this AccountService) Login(in *proto.PLoginData) (out *proto.PUserAndToken, err error) {
 	user := new(TUser)
 	out = new(proto.PUserAndToken)
 
+	// os参数
+	if len(in.Os.String()) == 0 {
+		err = errcode.GetError(errcode.ErrInvalidParam, "os")
+		return
+	}
+
+	// android ios 需要设备唯一码
+	if in.Os != common.OS_WEB && len(in.DeviceId) == 0 {
+		err = errcode.GetError(errcode.ErrInvalidParam, "DeviceId")
+		return
+	}
+
 	switch in.LoginType {
 	// 账号密码登陆
 	case proto.ELoginType_ACCOUNT:
 		user, err = this.loginByAccount(in)
 	default:
-		err = errors.New("请选择登陆方式")
+		err = errcode.GetError(errcode.ErrInvalidParam, "LoginType")
 		return
 	}
 
+	// 获取原来登陆设备信息(如果已登陆)
+	var deviceId string
+	if payloadOldStr, err := this.cache.GetUserToken(user.Id); err == nil {
+		if payloadInfo, err := util.JwtToken.ParsePayload(payloadOldStr); err == nil {
+			deviceId = payloadInfo.DeviceId
+		}
+	}
+
 	// token生成
-	token, err := util.JwtToken.Generate(user.Id, in.Os, in.LoginType)
+	token, payload, err := util.JwtToken.Generate(user.Id, in.Os, in.LoginType, in.DeviceId)
 	if err != nil {
 		err = errcode.GetError(errcode.ErrAccountTokenGenerate)
 		return
@@ -75,11 +96,17 @@ func (this AccountService) Login(in *proto.PLoginData) (out *proto.PUserAndToken
 	}
 
 	// 保存token
-	err = this.cache.SetUserToken(user.Id, token)
+	err = this.cache.SetUserToken(user.Id, payload)
 	if err != nil {
 		common.Logs.Info("SetUserToken err", err.Error())
 		err = errcode.GetError(errcode.ErrCustomMsg, "保存用户token失败!")
 		return
+	}
+
+	// 不同设备登陆,踢原下线
+	if deviceId != in.DeviceId {
+		// todo 发送通知到旧手机,踢出下线
+		common.Logs.Info("send offline", deviceId)
 	}
 
 	return out, nil
