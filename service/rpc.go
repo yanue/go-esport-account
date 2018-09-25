@@ -24,6 +24,9 @@ type AccountRpc struct {
 	account *AccountService
 }
 
+/**
+@note 验证jwt token
+ */
 func (this *AccountRpc) verifyToken(ctx context.Context) (token *proto.PJwtToken, err error) {
 	// 获取token
 	md, ok := metadata.FromContext(ctx)

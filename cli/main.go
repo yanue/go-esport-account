@@ -54,7 +54,7 @@ func login(cl proto.AccountClient) {
 
 	// Make request
 	rsp, err := cl.Login(context.Background(), &proto.PLoginData{
-		LoginType:  proto.ELoginType_ACCOUNT,
+		LoginType:  proto.ELoginType_PHONE,
 		Account:    "yanue",
 		Phone:      "18503002165",
 		VerifyCode: "1234",
