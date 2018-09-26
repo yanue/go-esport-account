@@ -15,12 +15,14 @@ import (
 	"github.com/micro/go-micro/transport"
 	"github.com/yanue/go-esport-common"
 	"github.com/yanue/go-esport-common/proto"
+	"github.com/yanue/go-esport-common/sms"
 	"time"
 )
 
 var rpc *AccountRpc
 var cache *AccountCache
 var orm *AccountOrm
+var smsUtil *sms.SmsUtil
 
 const RedisPrefix = common.ServiceNameAccount + "_"
 
@@ -45,6 +47,12 @@ func InitAccountService(dbUser, dbAuth, dbAddr, dbName, redisAddr, redisPass str
 	// rpc service
 	rpc = new(AccountRpc)
 	rpc.account = acct
+
+	accessKeyId := ""
+	accessKeySecret := ""
+	signName := "智享协同"
+	// sms util
+	smsUtil = sms.NewSms(accessKeyId, accessKeySecret, signName, cache.redis)
 
 	// 微服务
 	rpcService := grpc.NewService(

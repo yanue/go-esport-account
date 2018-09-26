@@ -170,7 +170,11 @@ func (this AccountService) loginByPhoneCode(in *proto.PLoginData) (user *TUser, 
 		return
 	}
 
-	// 验证手机验证码 todo
+	// 验证手机验证码
+	if !smsUtil.VerifyCode(in.Phone, in.VerifyCode, sms.SmsCodeTypeQuickLogin, true) {
+		err = errcode.GetError(errcode.ErrVerifyCodeCheck)
+		return
+	}
 
 	// 设置session
 	return user, nil
@@ -193,8 +197,6 @@ func (this AccountService) loginByQQ(in *proto.PLoginData) (user *TUser, err err
 		err = errcode.GetError(errcode.ErrAccountNotExist)
 		return
 	}
-
-	// 验证手机验证码 todo
 
 	// 设置session
 	return user, nil
