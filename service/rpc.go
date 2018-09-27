@@ -14,7 +14,9 @@ import (
 	"github.com/yanue/go-esport-common"
 	"github.com/yanue/go-esport-common/errcode"
 	"github.com/yanue/go-esport-common/proto"
+	"github.com/yanue/go-esport-common/sms"
 	"github.com/yanue/go-esport-common/util"
+	"github.com/yanue/go-esport-common/validator"
 	"golang.org/x/net/context"
 )
 
@@ -144,7 +146,21 @@ func (this *AccountRpc) GetUserInfo(ctx context.Context, in *proto.PInt32, out *
 /**
 获取验证码
  */
-func (this *AccountRpc) GetVerifyCode(ctx context.Context, in *proto.PString, out *proto.PBool) error {
-	out.Val = true
+func (this *AccountRpc) SendSmsVerifyCode(ctx context.Context, in *proto.PSmsData, out *proto.PNoResponse) error {
+	if errCode := validator.Verify.IsPhoneWithoutCode(in.Phone); errCode > 0 {
+		return errcode.GetError(errCode)
+	}
+
+	if len(in.Imei) < 6 {
+		return errcode.GetError(errcode.ErrInvalidParam, "imei")
+	}
+
+	codeType := sms.CodeType(in.CodeType.String())
+	if errCode := smsUtil.SendCode(in.Phone, codeType, in.Imei); errCode > 0 {
+		return errcode.GetError(errCode)
+	}
+
+	*out = proto.PNoResponse{}
+
 	return nil
 }

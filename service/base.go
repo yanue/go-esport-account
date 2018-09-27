@@ -48,8 +48,8 @@ func InitAccountService(dbUser, dbAuth, dbAddr, dbName, redisAddr, redisPass str
 	rpc = new(AccountRpc)
 	rpc.account = acct
 
-	accessKeyId := ""
-	accessKeySecret := ""
+	accessKeyId := "LTAIiCR1y6RAa2IC"
+	accessKeySecret := "pit2WJpgdhSwOEhzr42EdlXMuTdhpn"
 	signName := "智享协同"
 	// sms util
 	smsUtil = sms.NewSms(accessKeyId, accessKeySecret, signName, cache.redis)

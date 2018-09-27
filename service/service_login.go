@@ -11,6 +11,7 @@
 package service
 
 import (
+	"fmt"
 	"github.com/yanue/go-esport-common"
 	"github.com/yanue/go-esport-common/errcode"
 	"github.com/yanue/go-esport-common/proto"
@@ -157,6 +158,7 @@ func (this AccountService) loginByAccount(in *proto.PLoginData) (user *TUser, er
  */
 func (this AccountService) loginByPhoneCode(in *proto.PLoginData) (user *TUser, err error) {
 	user = new(TUser)
+	fmt.Println("loginByPhoneCode", in)
 
 	// 检查账户
 	if code := validator.Verify.IsPhoneWithoutCode(in.Phone); code > 0 {
@@ -164,15 +166,15 @@ func (this AccountService) loginByPhoneCode(in *proto.PLoginData) (user *TUser, 
 		return
 	}
 
-	// 查找用户
-	if err = this.orm.db.First(user, " phone = ? ", in.Phone).Error; err != nil {
-		err = errcode.GetError(errcode.ErrAccountNotExist)
-		return
-	}
-
 	// 验证手机验证码
 	if !smsUtil.VerifyCode(in.Phone, in.VerifyCode, sms.SmsCodeTypeQuickLogin, true) {
 		err = errcode.GetError(errcode.ErrVerifyCodeCheck)
+		return
+	}
+
+	// 查找用户
+	if err = this.orm.db.First(user, " phone = ? ", in.Phone).Error; err != nil {
+		err = errcode.GetError(errcode.ErrAccountNotExist)
 		return
 	}
 
@@ -221,7 +223,6 @@ func (this AccountService) loginByWeChat(in *proto.PLoginData) (user *TUser, err
 	}
 
 	// 验证手机验证码 todo
-	sms.PrefixBindVercode
 
 	// 设置session
 	return user, nil
