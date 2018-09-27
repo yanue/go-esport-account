@@ -48,7 +48,7 @@ func (this *AccountCache) initRedis(redisAddr, redisPass string) {
 func (this *AccountCache) GetUserInfo(uid int) (user *TUser, err error) {
 	user = new(TUser)
 	key := this.key.HUserInfo(uid)
-
+	//util.Proto2Byte()
 	res, err := this.redis.HGetAll(key).Result()
 	if err != nil {
 		return user, err

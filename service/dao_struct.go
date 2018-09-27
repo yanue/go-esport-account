@@ -18,7 +18,8 @@ type TUser struct {
 	Id             int
 	Account        string `gorm:"not null;size:50;unique;comment:'登陆账号,唯一';"`
 	Password       string `gorm:"not null;type:char(60);comment:'登陆密码';"`
-	Name           string `gorm:"not null;index;size:100;"`
+	Name           string `gorm:"not null;index;size:100;comment:'用户昵称'"`
+	Avatar         string `gorm:"not null;"`
 	Gender         int    `gorm:"not null;comment:'0未设置,1男,2女';"`
 	Phone          string `gorm:"not null;type:char(11);comment:'手机号';"`
 	Email          string `gorm:"not null;comment:'邮箱';"`
@@ -34,14 +35,15 @@ type TUser struct {
 
 // 第三方登陆信息
 type TUserAuth struct {
-	Id         int
-	UserId     int    `gorm:"not null;"`
-	AuthSite   string `gorm:"type:ENUM('wx', 'qq', 'wb');default:'wx';"`
-	AuthOpenid int    `gorm:"not null;comment:'微信/qq等openid';"`
-	AuthToken  int    `gorm:"not null;comment:'授权信息';"`
-	AuthExpire int    `gorm:"not null;comment:'授权过期时间';"`
-	Created    int    `gorm:"not null;"`
-	Modified   int    `gorm:"not null;"`
+	Id          int
+	UserId      int    `gorm:"not null;"`
+	AuthSite    string `gorm:"type:ENUM('wx', 'qq', 'wb');default:'wx';"`
+	AuthOpenid  string `gorm:"not null;comment:'微信/qq等openid';"`
+	AuthUnionID string `gorm:"not null;comment:'微信/qq等unionID';"` // 开发者可通过openID来获取用户的基本信息。
+	AuthToken   string `gorm:"not null;comment:'授权信息';"`
+	AuthExpire  int    `gorm:"not null;comment:'授权过期时间';"`
+	Created     int    `gorm:"not null;"`
+	Modified    int    `gorm:"not null;"`
 }
 
 // 省份

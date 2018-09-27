@@ -23,18 +23,24 @@ import (
 /**
 账号登陆
  */
-func (this AccountService) Login(in *proto.PLoginData) (out *proto.PUserAndToken, err error) {
+func (this *AccountService) Login(in *proto.PLoginData) (out *proto.PUserAndToken, err error) {
 	user := new(TUser)
 	out = new(proto.PUserAndToken)
 
+	// 设备信息
+	if in.Device == nil {
+		err = errcode.GetError(errcode.ErrInvalidParam, "Device")
+		return
+	}
+
 	// os参数
-	if len(in.Os.String()) == 0 {
+	if len(in.Device.Os.String()) == 0 {
 		err = errcode.GetError(errcode.ErrInvalidParam, "os")
 		return
 	}
 
 	// android ios 需要设备唯一码
-	if in.Os != common.OS_WEB && len(in.DeviceId) == 0 {
+	if in.Device.Os != common.OS_WEB && len(in.Device.Imei) == 0 {
 		err = errcode.GetError(errcode.ErrInvalidParam, "DeviceId")
 		return
 	}
@@ -48,10 +54,10 @@ func (this AccountService) Login(in *proto.PLoginData) (out *proto.PUserAndToken
 		user, err = this.loginByPhoneCode(in)
 		// 手机验证码登陆方式
 	case proto.ELoginType_QQ:
-		user, err = this.loginByPhoneCode(in)
+		user, err = this.loginByQQ(in)
 		// 手机验证码登陆方式
 	case proto.ELoginType_WECHAT:
-		user, err = this.loginByPhoneCode(in)
+		user, err = this.loginByWeChat(in)
 	default:
 		err = errcode.GetError(errcode.ErrInvalidParam, "LoginType")
 	}
@@ -65,12 +71,13 @@ func (this AccountService) Login(in *proto.PLoginData) (out *proto.PUserAndToken
 	var deviceId string
 	if payloadOldStr, err := this.cache.GetUserToken(user.Id); err == nil {
 		if payloadInfo, err := util.JwtToken.ParsePayload(payloadOldStr); err == nil {
-			deviceId = payloadInfo.DeviceId
+			fmt.Println("payloadInfo", payloadInfo, payloadInfo.Device)
+			deviceId = payloadInfo.Device.Imei
 		}
 	}
 
 	// token生成
-	token, payload, err := util.JwtToken.Generate(user.Id, in.Os, in.LoginType, in.DeviceId)
+	token, payload, err := util.JwtToken.Generate(user.Id, in.LoginType, in.Device)
 	if err != nil {
 		err = errcode.GetError(errcode.ErrAccountTokenGenerate)
 		return
@@ -99,7 +106,7 @@ func (this AccountService) Login(in *proto.PLoginData) (out *proto.PUserAndToken
 	}
 
 	// 不同设备登陆,踢原下线
-	if deviceId != in.DeviceId {
+	if deviceId != in.Device.Imei {
 		// todo 发送通知到旧手机,踢出下线
 		common.Logs.Info("send offline", deviceId)
 	}
@@ -110,7 +117,7 @@ func (this AccountService) Login(in *proto.PLoginData) (out *proto.PUserAndToken
 /**
 账号登陆方式
  */
-func (this AccountService) loginByAccount(in *proto.PLoginData) (user *TUser, err error) {
+func (this *AccountService) loginByAccount(in *proto.PLoginData) (user *TUser, err error) {
 	user = new(TUser)
 
 	// 检查账户
@@ -156,7 +163,7 @@ func (this AccountService) loginByAccount(in *proto.PLoginData) (user *TUser, er
 /**
 手机验证码方式登陆
  */
-func (this AccountService) loginByPhoneCode(in *proto.PLoginData) (user *TUser, err error) {
+func (this *AccountService) loginByPhoneCode(in *proto.PLoginData) (user *TUser, err error) {
 	user = new(TUser)
 	fmt.Println("loginByPhoneCode", in)
 
@@ -185,45 +192,94 @@ func (this AccountService) loginByPhoneCode(in *proto.PLoginData) (user *TUser, 
 /**
 qq登陆
  */
-func (this AccountService) loginByQQ(in *proto.PLoginData) (user *TUser, err error) {
+func (this *AccountService) loginByQQ(in *proto.PLoginData) (user *TUser, err error) {
 	user = new(TUser)
 
-	// 检查账户
-	if code := validator.Verify.IsPhoneWithoutCode(in.Phone); code > 0 {
-		err = errcode.GetError(code)
+	// 检查AccessToken
+	if len(in.QqAccessToken) == 0 {
+		err = errcode.GetError(errcode.ErrInvalidParam, "QqAccessToken")
 		return
 	}
+
+	// 检查Openid
+	if len(in.QqOpenid) == 0 {
+		err = errcode.GetError(errcode.ErrInvalidParam, "QqOpenid")
+		return
+	}
+
+	var auth *AuthLogin = new(AuthLogin)
 
 	// 查找用户
-	if err = this.orm.db.First(user, " phone = ? ", in.Phone).Error; err != nil {
-		err = errcode.GetError(errcode.ErrAccountNotExist)
+	if !auth.AuthQQ(in.QqOpenid, in.QqAccessToken) {
+		err = errcode.GetError(errcode.ErrAccountVerifyQQ)
 		return
 	}
 
-	// 设置session
-	return user, nil
+	common.Logs.Info("login:", auth)
+
+	// 设置绑定信息
+	return this.setBindInfo(auth)
 }
 
 /**
 微信登陆
  */
-func (this AccountService) loginByWeChat(in *proto.PLoginData) (user *TUser, err error) {
+func (this *AccountService) loginByWeChat(in *proto.PLoginData) (user *TUser, err error) {
 	user = new(TUser)
 
 	// 检查账户
-	if code := validator.Verify.IsPhoneWithoutCode(in.Phone); code > 0 {
-		err = errcode.GetError(code)
+	if len(in.WxCode) == 0 {
+		err = errcode.GetError(errcode.ErrInvalidParam, "QqAccessToken")
 		return
 	}
 
+	var auth *AuthLogin = new(AuthLogin)
 	// 查找用户
-	if err = this.orm.db.First(user, " phone = ? ", in.Phone).Error; err != nil {
-		err = errcode.GetError(errcode.ErrAccountNotExist)
+	if !auth.AuthWechat(in.WxCode) {
+		err = errcode.GetError(errcode.ErrAccountVerifyWechat)
 		return
 	}
 
-	// 验证手机验证码 todo
+	common.Logs.Info("login:", auth)
 
-	// 设置session
-	return user, nil
+	// 设置绑定信息
+	return this.setBindInfo(auth)
+}
+
+/**
+授权成功后,设置绑定信息
+1. 检查是否授权过(需要注册)
+2. 检查是否其他方式授权过(统一qq不同appkey同一union_id)
+ */
+func (this *AccountService) setBindInfo(auth *AuthLogin) (user *TUser, err error) {
+	user = new(TUser)
+
+	// 查询注册情况(unionid)
+	userAuth := new(TUserAuth)
+	if e := this.orm.db.First(userAuth, "auth_union_id=?", auth.Auth.AuthUnionID).Error; e != nil {
+		err = errcode.GetError(errcode.ErrAccountBindGet)
+		return
+	}
+
+	// 数据未找到
+	if userAuth.Id == 0 {
+		// 注册用户 todo
+		err = errcode.GetError(errcode.ErrAccountBindGet)
+		return
+	}
+
+	// 查询openid
+	if e := this.orm.db.First(userAuth, "auth_open_id=?", auth.Auth.AuthOpenid).Error; e != nil {
+		err = errcode.GetError(errcode.ErrAccountBindGet)
+		return
+	}
+
+	// 数据未找到
+	if userAuth.Id == 0 {
+		// 插入openid一条信息 todo
+		err = errcode.GetError(errcode.ErrAccountBindGet)
+		return
+	}
+
+	return this.GetUserInfo(userAuth.UserId)
 }
