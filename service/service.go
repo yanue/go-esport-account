@@ -32,7 +32,7 @@ func (this *AccountService) GetUserInfo(uid int) (user *TUser, err error) {
 		return
 	}
 
-	this.cache.SetUserInfo(uid)
+	//err=this.cache.SetUserInfo(uid)
 
 	return user, nil
 }

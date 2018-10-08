@@ -16,7 +16,7 @@ import (
 // 用户表
 type TUser struct {
 	Id             int
-	Account        string `gorm:"not null;size:50;unique;comment:'登陆账号,唯一';"`
+	Account        string `gorm:"not null;size:50;comment:'登陆账号,唯一,初始为空';"`
 	Password       string `gorm:"not null;type:char(60);comment:'登陆密码';"`
 	Name           string `gorm:"not null;index;size:100;comment:'用户昵称'"`
 	Avatar         string `gorm:"not null;"`
@@ -29,8 +29,8 @@ type TUser struct {
 	IdentityNo     string `gorm:"not null;type:char(18);comment:'身份证号';"`
 	IdentityName   string `gorm:"not null;size:60;comment:'身份姓名(真实姓名)';"`
 	IdentityStatus int    `gorm:"not null;index;comment:'身份认证状态';"`
-	Created        int    `gorm:"not null;"`
-	Modified       int    `gorm:"not null;"`
+	Created        int64  `gorm:"not null;"`
+	Modified       int64  `gorm:"not null;"`
 }
 
 // 第三方登陆信息
@@ -42,8 +42,8 @@ type TUserAuth struct {
 	AuthUnionID string `gorm:"not null;comment:'微信/qq等unionID';"` // 开发者可通过openID来获取用户的基本信息。
 	AuthToken   string `gorm:"not null;comment:'授权信息';"`
 	AuthExpire  int    `gorm:"not null;comment:'授权过期时间';"`
-	Created     int    `gorm:"not null;"`
-	Modified    int    `gorm:"not null;"`
+	Created     int64  `gorm:"not null;"`
+	Modified    int64  `gorm:"not null;"`
 }
 
 // 省份

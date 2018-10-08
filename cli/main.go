@@ -41,10 +41,10 @@ func main() {
 }
 
 func runClient() {
-	//sendVerifyCode()
+	sendVerifyCode()
 	//loginByPhone()
 
 	//loginByWechat()
-	loginByQQ()
+	//loginByQQ()
 	//loginByAccount()
 }

@@ -12,12 +12,14 @@ package service
 
 import (
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"github.com/yanue/go-esport-common"
 	"github.com/yanue/go-esport-common/errcode"
 	"github.com/yanue/go-esport-common/proto"
 	"github.com/yanue/go-esport-common/sms"
 	"github.com/yanue/go-esport-common/util"
 	"github.com/yanue/go-esport-common/validator"
+	"time"
 )
 
 /**
@@ -253,33 +255,54 @@ func (this *AccountService) loginByWeChat(in *proto.PLoginData) (user *TUser, er
  */
 func (this *AccountService) setBindInfo(auth *AuthLogin) (user *TUser, err error) {
 	user = new(TUser)
+	userAuth := new(TUserAuth)
+
+	defer func() {
+		if err == nil && userAuth.UserId > 0 {
+			user, err = this.GetUserInfo(userAuth.UserId)
+			return
+		}
+	}()
 
 	// 查询注册情况(unionid)
-	userAuth := new(TUserAuth)
-	if e := this.orm.db.First(userAuth, "auth_union_id=?", auth.Auth.AuthUnionID).Error; e != nil {
+	if e := this.orm.db.First(userAuth, "auth_union_id=?", auth.Auth.AuthUnionID).Error; e != nil && e != gorm.ErrRecordNotFound {
+		common.Logs.Info(e)
 		err = errcode.GetError(errcode.ErrAccountBindGet)
 		return
 	}
 
 	// 数据未找到
 	if userAuth.Id == 0 {
-		// 注册用户 todo
+		// 通过授权信息注册用户
+		userAuth, err = this.RegByAuth(auth)
+		return
+	}
+
+	// 重置数据
+	uid := userAuth.UserId
+	// id重置为0
+	userAuth.Id = 0
+
+	// 通过openid查询
+	if e := this.orm.db.First(userAuth, "auth_openid=?", auth.Auth.AuthOpenid).Error; e != nil && e != gorm.ErrRecordNotFound {
+		common.Logs.Info(e)
 		err = errcode.GetError(errcode.ErrAccountBindGet)
 		return
 	}
 
-	// 查询openid
-	if e := this.orm.db.First(userAuth, "auth_open_id=?", auth.Auth.AuthOpenid).Error; e != nil {
-		err = errcode.GetError(errcode.ErrAccountBindGet)
-		return
-	}
-
-	// 数据未找到
+	// openid数据未找到
 	if userAuth.Id == 0 {
-		// 插入openid一条信息 todo
-		err = errcode.GetError(errcode.ErrAccountBindGet)
-		return
+		// 插入数据
+		userAuth = &auth.Auth
+		userAuth.UserId = uid
+		userAuth.Created = time.Now().Unix()
+
+		// 插入openid一条信息
+		if e := this.orm.db.Create(userAuth).Error; e != nil && e != gorm.ErrRecordNotFound {
+			common.Logs.Info(e)
+			err = errcode.GetError(errcode.ErrAccountBindGet)
+		}
 	}
 
-	return this.GetUserInfo(userAuth.UserId)
+	return
 }

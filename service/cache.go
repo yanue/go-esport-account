@@ -11,9 +11,11 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/mitchellh/mapstructure"
 	"github.com/yanue/go-esport-common"
+	"github.com/yanue/go-esport-common/util"
 )
 
 type AccountCache struct {
@@ -48,6 +50,7 @@ func (this *AccountCache) initRedis(redisAddr, redisPass string) {
 func (this *AccountCache) GetUserInfo(uid int) (user *TUser, err error) {
 	user = new(TUser)
 	key := this.key.HUserInfo(uid)
+	fmt.Println("key", key)
 	//util.Proto2Byte()
 	res, err := this.redis.HGetAll(key).Result()
 	if err != nil {
@@ -57,8 +60,14 @@ func (this *AccountCache) GetUserInfo(uid int) (user *TUser, err error) {
 	if len(res) == 0 {
 		return user, errors.New("未找到数据")
 	}
+
+	data := make(map[string]interface{}, 0)
+	for key, value := range res {
+		data[key] = value
+	}
+
+	err = util.Struct.MapToStruct(data, user)
 	// 解析到结构体
-	err = mapstructure.Decode(res, user)
 	if err != nil {
 		return user, err
 	}

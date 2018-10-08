@@ -45,6 +45,8 @@ type AuthLogin struct {
 }
 
 func (this *AuthLogin) AuthQQ(openid, accessToken string) bool {
+	// ENUM('wx', 'qq', 'wb')
+	this.Auth.AuthSite = "qq"
 	this.Auth.AuthOpenid = openid
 
 	// 链接地址
@@ -132,6 +134,9 @@ func (this *AuthLogin) AuthQQ(openid, accessToken string) bool {
 }
 
 func (this *AuthLogin) AuthWechat(code string) bool {
+	// ENUM('wx', 'qq', 'wb')
+	this.Auth.AuthSite = "wx"
+
 	// 取access token
 	strUrl := ""
 
