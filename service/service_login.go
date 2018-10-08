@@ -25,9 +25,37 @@ import (
 /**
 账号登陆
  */
-func (this *AccountService) Login(in *proto.PLoginData) (out *proto.PUserAndToken, err error) {
+func (this *AccountService) Login(in *proto.PLoginData, ip string) (out *proto.PUserAndToken, err error) {
 	user := new(TUser)
 	out = new(proto.PUserAndToken)
+
+	defer func() {
+		// 记录每次登陆信息
+		uLogin := new(TUserLogin)
+
+		// login type
+		uLogin.LoginType = in.LoginType.String()
+		// 设备信息
+		uLogin.Device = util.Struct.ToJsonString(in.Device)
+		// ip
+		uLogin.Ip = ip
+		// 登陆时间
+		uLogin.Created = time.Now().Unix()
+		// login data
+		in.Device = nil // set nil
+		uLogin.LoginData = util.Struct.ToJsonString(in)
+		// 登陆成功,用户id
+		uLogin.UserId = user.Id
+		// 错误信息
+		if err != nil {
+			uLogin.ErrMsg = err.Error()
+		}
+
+		// 插入数据
+		if e := this.orm.db.Create(uLogin).Error; e != nil {
+			common.Logs.Info(e)
+		}
+	}()
 
 	// 设备信息
 	if in.Device == nil {
@@ -167,7 +195,6 @@ func (this *AccountService) loginByAccount(in *proto.PLoginData) (user *TUser, e
  */
 func (this *AccountService) loginByPhoneCode(in *proto.PLoginData) (user *TUser, err error) {
 	user = new(TUser)
-	fmt.Println("loginByPhoneCode", in)
 
 	// 检查账户
 	if code := validator.Verify.IsPhoneWithoutCode(in.Phone); code > 0 {
@@ -183,7 +210,14 @@ func (this *AccountService) loginByPhoneCode(in *proto.PLoginData) (user *TUser,
 
 	// 查找用户
 	if err = this.orm.db.First(user, " phone = ? ", in.Phone).Error; err != nil {
-		err = errcode.GetError(errcode.ErrAccountNotExist)
+		// 未找到数据
+		if err == gorm.ErrRecordNotFound {
+			// 通过手机号注册
+			return this.RegByPhone(in.Phone)
+		} else {
+			err = errcode.GetError(errcode.ErrAccountNotExist)
+		}
+
 		return
 	}
 

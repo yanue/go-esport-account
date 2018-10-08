@@ -36,3 +36,17 @@ func (this *AccountService) GetUserInfo(uid int) (user *TUser, err error) {
 
 	return user, nil
 }
+
+/**
+完善资料
+ */
+func (this *AccountService) SaveProfile() {
+
+}
+
+/**
+资料认证
+ */
+func (this *AccountService) Verify() {
+
+}

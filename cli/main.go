@@ -41,9 +41,9 @@ func main() {
 }
 
 func runClient() {
-	sendVerifyCode()
-	//loginByPhone()
-
+	//sendVerifyCode()
+	//getAccountInfo()
+	loginByPhone()
 	//loginByWechat()
 	//loginByQQ()
 	//loginByAccount()

@@ -42,3 +42,45 @@ func (this *AccountService) RegByAuth(auth *AuthLogin) (userAuth *TUserAuth, err
 
 	return
 }
+
+/**
+通过手机号注册(一键登录)
+-- 已经确认未注册
+ */
+func (this *AccountService) RegByPhone(phone string) (user *TUser, err error) {
+	user = new(TUser)
+	user.Phone = phone
+	user.Created = time.Now().Unix()
+
+	err = this.orm.db.Create(user).Error
+
+	return
+}
+
+/**
+绑定qq
+ */
+func (this *AccountService) BindQQ() {
+
+}
+
+/**
+绑定微信
+ */
+func (this *AccountService) BindWeChat() {
+
+}
+
+/**
+绑定账号名(账号密码登陆)
+ */
+func (this *AccountService) BindAccount() {
+
+}
+
+/**
+绑定手机号(手机号登陆)
+ */
+func (this *AccountService) BindPhone() {
+
+}

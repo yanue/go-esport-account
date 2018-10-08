@@ -44,6 +44,7 @@ func (this *AccountOrm) initDb(dbUser, dbAuth, dbAddr, dbName string) {
 	// 自动迁移模式
 	db.AutoMigrate(&TUser{})
 	db.AutoMigrate(&TUserAuth{})
+	db.AutoMigrate(&TUserLogin{})
 	db.AutoMigrate(&TAreaProvince{})
 	db.AutoMigrate(&TAreaCity{})
 	db.AutoMigrate(&TSchool{})

@@ -128,13 +128,14 @@ func getUserInfo() {
 }
 
 func getAccountInfo() {
+	token = "CgVIUzI1NhIFcHJvdG8.CAEQChjP-OvdBSI7CiQxOUFBQjQzMC05Q0I4LTQzMjUtQUNDNS1EN0QzODZCNjg5NjAQARoGMTIuMC4yIglpUGhvbmUgNnM.558033a8374eec01b106d536ce69b455cb50a224d6062c0bf2c6138af8ba49a7"
 	// Set arbitrary headers in context
 	ctx := metadata.NewContext(context.Background(), map[string]string{
 		"Authorization": token,
 	})
-	//fmt.Println("ctx", ctx)
 	// Make request
 	rsp, err := cl.GetAccountInfo(ctx, &proto.PNoParam{})
+
 
 	if err != nil {
 		fmt.Println("err:", err)

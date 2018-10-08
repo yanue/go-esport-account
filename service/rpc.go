@@ -34,7 +34,7 @@ func (this *AccountRpc) verifyToken(ctx context.Context) (token *proto.PJwtToken
 	md, ok := metadata.FromContext(ctx)
 	tokenStr, ok := md["authorization"]
 	if !ok {
-		errcode.GetError(errcode.ErrInvalidParam, "authorization")
+		err = errcode.GetError(errcode.ErrInvalidParam, "authorization")
 		return
 	}
 
@@ -63,17 +63,18 @@ func (this *AccountRpc) verifyToken(ctx context.Context) (token *proto.PJwtToken
 	return jwt.PJwtToken, nil
 }
 
-/**
-注册
- */
-func (this *AccountRpc) Reg(ctx context.Context, in *proto.PString, out *proto.PUserAndToken) error {
-	return nil
-}
-
 /**登陆*/
 func (this *AccountRpc) Login(ctx context.Context, in *proto.PLoginData, out *proto.PUserAndToken) error {
+	// 获取ip
+	md, ok := metadata.FromContext(ctx)
+	ipStr := ""
+	if ok {
+		ip, _ := md[":authority"]
+		ipStr = ip
+	}
+
 	// 处理登陆逻辑
-	user, err := this.account.Login(in)
+	user, err := this.account.Login(in, ipStr)
 	if err != nil {
 		common.Logs.Debug("login err=", err.Error(), user)
 		return err

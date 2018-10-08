@@ -33,6 +33,18 @@ type TUser struct {
 	Modified       int64  `gorm:"not null;"`
 }
 
+// 用户登陆记录
+type TUserLogin struct {
+	Id        int
+	LoginType string // 对应 proto.ELoginType
+	LoginData string // 对应 proto.PLoginData
+	Device    string // 对应 proto.PDevice
+	UserId    int    // 对应用户id
+	ErrMsg    string // 登陆错误信息
+	Ip        string // ip
+	Created   int64 `gorm:"not null;"`
+}
+
 // 第三方登陆信息
 type TUserAuth struct {
 	Id          int
