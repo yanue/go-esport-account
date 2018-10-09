@@ -159,6 +159,7 @@ func (this *AccountService) loginByAccount(in *proto.PLoginData) (user *TUser, e
 	// 密码解密-私钥解密(客户端公钥加密)
 	pass, err := util.Rsa.RsaDecryptPrivate(in.Password)
 	if err != nil {
+		err = errcode.GetError(errcode.ErrInvalidPassword)
 		return
 	}
 
@@ -197,14 +198,14 @@ func (this *AccountService) loginByPhoneCode(in *proto.PLoginData) (user *TUser,
 	user = new(TUser)
 
 	// 检查账户
-	if code := validator.Verify.IsPhoneWithoutCode(in.Phone); code > 0 {
+	if code := validator.Verify.IsPhone(in.Phone); code > 0 {
 		err = errcode.GetError(code)
 		return
 	}
 
 	// 验证手机验证码
 	if !smsUtil.VerifyCode(in.Phone, in.VerifyCode, sms.SmsCodeTypeQuickLogin, true) {
-		err = errcode.GetError(errcode.ErrVerifyCodeCheck)
+		err = errcode.GetError(errcode.ErrSmsVerifyCodeCheck)
 		return
 	}
 
@@ -292,6 +293,7 @@ func (this *AccountService) setBindInfo(auth *AuthLogin) (user *TUser, err error
 	userAuth := new(TUserAuth)
 
 	defer func() {
+		// 最后获取用户信息
 		if err == nil && userAuth.UserId > 0 {
 			user, err = this.GetUserInfo(userAuth.UserId)
 			return
@@ -332,9 +334,13 @@ func (this *AccountService) setBindInfo(auth *AuthLogin) (user *TUser, err error
 		userAuth.Created = time.Now().Unix()
 
 		// 插入openid一条信息
-		if e := this.orm.db.Create(userAuth).Error; e != nil && e != gorm.ErrRecordNotFound {
+		if e := this.orm.db.Create(userAuth).Error; e != nil {
 			common.Logs.Info(e)
-			err = errcode.GetError(errcode.ErrAccountBindGet)
+			if auth.Auth.AuthSite == "wx" {
+				err = errcode.GetError(errcode.ErrAccountBindWechat)
+			} else {
+				err = errcode.GetError(errcode.ErrAccountBindQQ)
+			}
 		}
 	}
 

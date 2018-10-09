@@ -53,6 +53,56 @@ func TestAccountService_Login(t *testing.T) {
 	}
 
 	// 处理登陆逻辑
-	user, err := rpc.account.Login(in)
+	user, err := rpc.account.Login(in, "1.1.1.1")
 	fmt.Println("user, err", user, err)
+}
+
+func TestAccountRpc_BindPhone(t *testing.T) {
+
+	user, err := rpc.account.GetUserInfo(9)
+	if err != nil {
+		//return errcode.GetError(errcode.ErrAccountGetUserInfo, err.Error())
+	}
+	var auth *AuthLogin = new(AuthLogin)
+	auth.Auth = TUserAuth{
+		AuthSite:    "qq",
+		AuthOpenid:  "222",
+		AuthUnionID: "222",
+		AuthToken:   "",
+		AuthExpire:  0,
+	}
+	auth.User = TUser{
+		Name:   "yanue",
+		Avatar: "aaa",
+		Gender: 1,
+	}
+
+	in := &proto.PBindData{
+		BindType:      proto.ELoginType_QQ,
+		QqOpenid:      "779E718A6B34B38807B83A7E2E649920",
+		QqAccessToken: "CEF076B476582DD9C07F70DFE39DE802",
+	}
+
+	err = rpc.account.BindPhone(in, user)
+
+	fmt.Println("err", err)
+}
+
+func TestAccountService_BindQQ(t *testing.T) {
+	uid := 9
+	var auth *AuthLogin = new(AuthLogin)
+	auth.Auth = TUserAuth{
+		AuthSite:    "wx",
+		AuthOpenid:  "222",
+		AuthUnionID: "222",
+		AuthToken:   "",
+		AuthExpire:  0,
+	}
+	auth.User = TUser{
+		Name:   "yanue",
+		Avatar: "aaa",
+		Gender: 1,
+	}
+	err := rpc.account.saveAuthBind(uid, auth)
+	fmt.Println("err", err)
 }
